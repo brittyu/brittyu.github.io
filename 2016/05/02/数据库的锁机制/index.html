@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keyword"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>数据库的锁机制 - 小圣的博客 | Yu's Blog</title>
+
+    <link rel="canonical" href="http://brittyu.xyz/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Yu's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        background-image: url('/img/home-bg.jpg')
+    }
+</style>
+<header class="intro-header" >
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#sql" title="sql">sql</a>
+                        
+                        <a class="tag" href="/tags/#linux" title="linux">linux</a>
+                        
+                    </div>
+                    <h1>数据库的锁机制</h1>
+                    
+                    
+                    <h2 class="subheading"></h2>
+                    
+                    <span class="meta">Posted by Yu's Blog on May 2, 2016</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<hr />
+
+<h3 id="section">锁</h3>
+
+<p>数据库是一种存储信息的容器，可以供给多个用户使用，允许多个用户同时使用数据库系统，这样子的业务需求就将导致一个问题就是：可能同时存在多个事务并发执行，这个时候就要保证数据库能够合理地并发运行。</p>
+
+<h3 id="section-1">并发执行</h3>
+
+<p>很多软件开发都是和操作系统的思想是一样的，现在借此机会，回顾一下操作系统的发展，一开始的操作系统是单道批处理系统，在内存中只是存在一道程序，每次执行完毕了之后，才从磁盘后备队列中取出下一道程序进入内存执行，这样子的执行方式导致了一个问题就是，计算机的系统资源没能够很好的利用起来，本身的cpu和i/o矛盾很严重，
+为了能够更加好的利用计算机的系统资源，所以就引入了进程的概念，同时引入了多道批处理的方式，同时把多个程序封装成进程放在内存中，然后通过进程调度算法来分配cpu资源，这样子稍微缓解了cpu和i/o操作的矛盾，节省了很多在i/o操作上面浪费的时间，这个就是并发执行的概念。当然，并发操作的存在也引入了很多关于资源管理
+的问题，互斥锁、信号量等方式是进程之间进行通信的方式，同时也是资源分配的一种手段，死锁的预防和检测也为数据库的并发问题提供了一个解决问题的思想。接下来，就按照从操作系统的角度对数据库的锁的知识进行比较详细的理解。</p>
+
+<hr />
+
+<h3 id="section-2">三种方式</h3>
+
+<p>数据库的并发控制方式主要是三种方式：<strong>封锁</strong>，<strong>时间戳</strong>，<strong>乐观控制法</strong></p>
+
+<hr />
+
+<h3 id="section-3">封锁</h3>
+
+<p>封锁：当一个事务的操作涉及到系统中的某个资源的时候，则对这个资源加上锁，加上了锁之后，这个事务能够对这个资源进行相应的操作，而且在当前这个事务未对这个资源解锁之前，其他的事务不能对这个资源进行允许的操作之外的操作。
+排它锁（写锁）：当一个事务对资源加上排它锁的时候，其他事务在这个事务对此资源解锁之前不能进行读写操作。
+共享锁（读锁）：当一个事务对资源加上共享锁的时候，其他事务在这个事务对此资源解锁之前不能进行写操作。</p>
+
+<h4 id="section-4">活锁</h4>
+
+<p>活锁指的是任务或者执行者没有被阻塞，由于某些条件没有满足，导致一直重复尝试，失败，尝试，失败。如果事务T1封锁了数据R,事务T2又请求封锁R，于是T2等待。T3也请求封锁R，当T1释放了R上的封锁后，系统首先批准了T3的请求，
+T2仍然等待。然后T4又请求封锁R，当T3释放了R上的封锁之后，系统又批准了T4的请求……T2可能永远等待。</p>
+
+<p>联想：进程在内存中是通过某种算法获取到cpu资源，避免长时间在内存中而不能运行从而浪费内存资源，也不能够得到较好的用户体验，为此，有这么一些进程调度算法：
+1、（普通）先来先服务，短作业优先算法
+2、（优先权）非抢占式优先权算法和抢占式优先权调度，静态优先权和动态优先权
+3、（响应比）高响应比
+4、（时间片）时间片轮转，多级反馈队列</p>
+
+<h4 id="section-5">死锁</h4>
+
+<p>多数情况下，可以认为如果一个资源被锁定，它总会在以后某个时间被释放。而死锁发生在当多个进程访问同一数据库时，其中每个进程拥有的锁都是其他进程所需的，由此造成每个进程都无法继续下去。简单的说，进程A等待进程B释放他的资源，
+B又等待A释放他的资源，这样就互相等待就形成死锁。</p>
+
+<p>联想：在操作系统中，为了解决死锁，常用的方式是预防死锁，或者是在产生死锁的时候通过检测，然后kill掉一些优先级比较低的进程，从而破坏了死锁的环路解决死锁的问题</p>
+
+<p><strong>预防死锁</strong>：
+1、摒弃“请求和保持”条件。进程运行的开始之前，一次性申请接下来要用到的所有的资源，如果是不能全部都一次性申请到，那么就先全部不申请，这样子就避免了在并发执行的时候，一个进程请求了一份资源之后保持着对资源的占用继续请求别的资源的问题。
+2、摒弃“不剥夺”条件。进程本身保持了一部分资源，在继续请求其他的资源的时候无法请求成功，则先释放之前保持的资源，在进程重新运行的时候重新请求。
+3、摒弃“环路”问题。在死锁出现在的时候，一般都是进程和资源的关系成一种环路状态，如果是避免产生这样子的环路情况，则能够解决死锁问题。</p>
+
+<p>死锁的诊断：
+1、<strong>超时法</strong>。如果是某个事务在指定的时间没能够完成运行，则表示死锁，但是这种方式很容易造成误判，超时的时间设置涉及到计算机的性能和当前的业务的情况。
+2、<strong>等待图法</strong>。通过G=(T,U)，判断图中是否存在环路，如果是存在环路则表示存在死锁，提前避免。</p>
+
+<p>检测死锁之后排除死锁的方式：
+1、剥夺资源。
+2、撤销进程。</p>
+
+<h3 id="section-6">可串行化调度</h3>
+
+<p>串行化调度：执行结果等价于串行调度，这样子的调度叫做可串行化的调度。可串行性是并发事务正确调度的准则。
+<strong>冲突操作</strong>： 不同的事务对同一个数据的读写操作和写写操作。</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># 冲突操作，不能做交换操作</span>
+R1<span class="o">(</span>x<span class="o">)</span> and W2<span class="o">(</span>x<span class="o">)</span>
+W1<span class="o">(</span>x<span class="o">)</span> and W2<span class="o">(</span>x<span class="o">)</span>
+</code></pre>
+</div>
+
+<p>不同事务的冲突操作和同一个事务的两个操作是不能交换的。
+一个调度S在保证冲突操作的次序不变的情况下，通过交换两个事务不冲突操作的次序得到了另一个调度S’，如果是得到的调度是串行的，称调度S为冲突可串行化的调度。
+一个调度是冲突可串行化，一定是可串行化的调度</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># 可以看到S1和S2都是串行化调度，所以S是可冲突串行化调度，而S1和S2是变换非冲突操作产生的</span>
+S <span class="o">=</span> r1<span class="o">(</span>A<span class="o">)</span>w1<span class="o">(</span>A<span class="o">)</span>r2<span class="o">(</span>A<span class="o">)</span>w2<span class="o">(</span>A<span class="o">)</span>r1<span class="o">(</span>B<span class="o">)</span>w1<span class="o">(</span>B<span class="o">)</span>r2<span class="o">(</span>B<span class="o">)</span>w2<span class="o">(</span>B<span class="o">)</span>
+S1 <span class="o">=</span> r1<span class="o">(</span>A<span class="o">)</span>w1<span class="o">(</span>A<span class="o">)</span>r2<span class="o">(</span>A<span class="o">)</span>r1<span class="o">(</span>B<span class="o">)</span>w1<span class="o">(</span>B<span class="o">)</span>w2<span class="o">(</span>A<span class="o">)</span>r2<span class="o">(</span>B<span class="o">)</span>w2<span class="o">(</span>B<span class="o">)</span>
+S2 <span class="o">=</span> r1<span class="o">(</span>A<span class="o">)</span>w1<span class="o">(</span>A<span class="o">)</span>r1<span class="o">(</span>B<span class="o">)</span>w1<span class="o">(</span>B<span class="o">)</span>r2<span class="o">(</span>A<span class="o">)</span>w2<span class="o">(</span>A<span class="o">)</span>r2<span class="o">(</span>B<span class="o">)</span>w2<span class="o">(</span>B<span class="o">)</span>
+</code></pre>
+</div>
+
+<h3 id="section-7">两段锁协议</h3>
+
+<p>两段锁协议：
+1、在对任何数据进行读写操作之前，首先分两个阶段对数据项加锁和解锁。
+2、在释放一个封锁之后，事务不再申请和获得任何其他的封锁</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># 封锁序列</span>
+SlockA SlockB SlockC     UlockA UlockB UlockC
+/<span class="k">*</span>---- 扩展阶段 -----<span class="k">*</span>/   /<span class="k">*</span>------ 收缩阶段 ----<span class="k">*</span>/
+</code></pre>
+</div>
+
+<h3 id="section-8">封锁的粒度</h3>
+
+<p>封锁粒度：封锁对象的大小称为封锁粒度。封锁对象可以是物理单元，也可以是逻辑单元。
+封锁单元的选择要结合业务的需求，如果是封锁单元过小，则可能加锁和解锁过于频发，从而消耗过多不必要的系统资源，如果封锁单元过大，则可能封锁时锁住了过多的系统资源，从而导致系统的并发能力下降。
+因为封锁单元大小比较难于选择，所以可以在同一个系统中使用多个封锁粒度（多粒度封锁）</p>
+
+<h4 id="section-9">多粒度封锁</h4>
+
+<p>多粒度树：把数据库的资源定义成一棵多粒度树，我们可以对多粒度树中的任何一个节点进行封锁，如果我们指明对某个节点进行加锁，则表示这个节点被<strong>显示加锁</strong>，则此节点的子节点被<em>隐式加锁</em>，子节点都是被加上了同父节点一样的锁。
+但是因为显示加锁和隐式加锁的存在，所以在查询资源是否被加锁的时候要进行过多的判断操作，所以使用到意向锁来简化这些操作。</p>
+
+<h4 id="section-10">意向锁</h4>
+
+<p>意向锁：如果对一个节点加意向锁，则说明该节点的下层节点正在被加锁，对任一节点加锁时，必须先对他的上层加意向锁</p>
+
+<p>1、<strong>IS锁</strong>：如果对一个数据对象加了IS锁，表示他得后裔节点加了S锁
+2、<strong>IX锁</strong>：如果对一个数据对象加了IX锁，表示他得后裔节点加了X锁
+3、<strong>SIX锁</strong>：如果对一个数据对象加了SIX锁（SIX=S+IX)，表示对 他 加S锁，再加IX锁。</p>
+
+<hr />
+
+<h3 id="section-11">悲观锁</h3>
+
+<p>假定会发生并发冲突，屏蔽一切可能违反数据完整性的操作。悲观锁假定其他用户企图访问或者改变你正在访问、更改的对象的概率是很高的，因此在悲观锁的环境中，在你开始改变此对象之前就将该对象锁住，
+并且直到你提交了所作的更改之后才释放锁。悲观的缺陷是不论是页锁还是行锁，加锁的时间可能会很长，这样可能会长时间的限制其他用户的访问，也就是说悲观锁的并发访问性不好。</p>
+
+<h3 id="section-12">乐观锁</h3>
+
+<p>假设不会发生并发冲突，只在提交操作时检查是否违反数据完整性。乐观锁不能解决脏读的问题。乐观锁则认为其他用户企图改变你正在更改的对象的概率是很小的，因此乐观锁直到你准备提交所作的更改时才将对象锁住，
+当你读取以及改变该对象时并不加锁。可见乐观锁加锁的时间要比悲观锁短，乐观锁可以用较大的锁粒度获得较好的并发访问性能。但是如果第二个用户恰好在第一个用户提交更改之前读取了该对象，那么当他完成了自己的更改进行提交时，
+数据库就会发现该对象已经变化了，这样，第二个用户不得不重新读取该对象并作出更改。这说明在乐观锁环境中，会加并发用户读取对象的次数。</p>
+
+<h4 id="section-13">乐观锁运用</h4>
+
+<p>1、使用自增长的整数表示数据版本号。更新时检查版本号是否一致，比如数据库中数据版本为6，更新提交时version=6+1,使用该version值(=7)与数据库version+1(=7)作比较，如果相等，则可以更新，如果不等则有可能其他程序已更新该记录，所以返回错误。</p>
+
+<p>2、使用时间戳来实现.</p>
+
+<hr />
+
+<p>碎碎的写了一下一些关于锁的知识，后期加上多一些的例证和代码举例。</p>
+
+
+                <hr>
+
+                
+                <!-- 多说 Share start -->
+                </style>
+                <div class="ds-share"
+                    style="text-align: right"
+                    data-thread-key="/2016/05/02/数据库的锁机制"
+                    data-title="数据库的锁机制"
+                    data-url="http://brittyu.xyz/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/"
+                    data-images="http://brittyu.xyz/img/home-bg.jpg"
+                    data-content="
+
+锁
+
+数据库是一种存储信息的容器，可以供给多个用户使用，允许多个用户同时使用数据库系统，这样子的业务需求就将导致一个问题就是：可能同时存在多个事务并发... | 小圣的博客 | Yu's Blog " >
+                    <div class="ds-share-inline">
+                      <ul  class="ds-share-icons-16">
+                        <li data-toggle="ds-share-icons-more"><a class="ds-more" href="#">分享到：</a></li>
+                        <li><a class="ds-wechat flat" href="javascript:void(0);" data-service="wechat">微信</a></li>
+                        <li><a class="ds-weibo flat" href="javascript:void(0);" data-service="weibo">微博</a></li>
+                        <li><a class="ds-douban flat" href="javascript:void(0);" data-service="douban">豆瓣</a></li>
+                      </ul>
+                      <div class="ds-share-icons-more">
+                      </div>
+                    </div>
+                <hr>
+                </div>
+                <!-- 多说 Share end-->
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2016/04/26/autoconf%E4%BD%BF%E7%94%A8/" data-toggle="tooltip" data-placement="top" title="autoconf使用">&larr; Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/" data-toggle="tooltip" data-placement="top" title="原来你是这样的Ioc">Next Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+
+                
+                <!-- 多说评论框 start -->
+                <div class="comment">
+                    <div class="ds-thread"
+                        data-thread-key="/2016/05/02/数据库的锁机制"
+                        data-title="数据库的锁机制"
+                        data-url="http://brittyu.xyz/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/" >
+                    </div>
+                </div>
+                <!-- 多说评论框 end -->
+                
+
+                
+
+            </div>
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+        				
+                            
+                				<a href="/tags/#linux" title="linux" rel="2">
+                                    linux
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://brittyu.xyz">Yu's Blog</a></li>
+                    
+                        <li><a href="#">Foo</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    // dynamic User by Hux
+    var _user = 'brittyu';
+
+    // duoshuo comment query.
+    var duoshuoQuery = {short_name: _user };
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+<!-- 多说公共JS代码 end -->
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("http://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/brittyuxs">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    <li>
+                        <a target="_blank" href="https://www.zhihu.com/people/pp23D">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa  fa-stack-1x fa-inverse">知</i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/234321654">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/brittyu">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Yu's Blog 2016
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("http://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

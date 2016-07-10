@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Yu&#39;s Blog</title>
+    <description></description>
+    <link>http://brittyu.xyz/</link>
+    <atom:link href="http://brittyu.xyz/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Mon, 11 Jul 2016 00:06:33 +0800</pubDate>
+    <lastBuildDate>Mon, 11 Jul 2016 00:06:33 +0800</lastBuildDate>
+    <generator>Jekyll v3.1.6</generator>
+    
+      <item>
+        <title>原来你是这样的Ioc</title>
+        <description>&lt;hr /&gt;
+
+&lt;p&gt;世间万物的出现必然有原因：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;早在2004年，Martin Fowler就提出了“哪些方面的控制被反转了？”这个问题。他总结出是依赖对象的获得被反转了，因为大多数应用程序都是由两个或是更多的类通过彼此的合作来实现业务逻辑，这使得每个对象都需要获取与其合作的对象（也就是它所依赖的对象）的引用。如果这个获取过程要靠自身实现，那么这将导致代码高度耦合并且难以维护和调试。 – 维基百科&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;一开始我们都是写着这样子的代码&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class People
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    private &lt;span class=&quot;nv&quot;&gt;$_water&lt;/span&gt;;
+
+    public &lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;setWater&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$this&lt;/span&gt;-&amp;gt;_water &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; new Water;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;但是我们可以发现一个很蛋疼的问题，就是，卧槽，某一天我发现人进化了，不需要喝水了，而是喝汽油了，那么怎么办，因为现在这块代码中水资源和人是耦合在一起的，哭死，到处改，蛋疼，且不方便测试。OOP的编程可是一直都是强调高内聚低耦合的惹，不能让这件事情发生 …&lt;/p&gt;
+
+&lt;h4 id=&quot;section&quot;&gt;什么叫做依赖（什么叫做依赖注入）？&lt;/h4&gt;
+&lt;p&gt;我需要一种东西，但是我没有这种东西，这个东西就是我的依赖。&lt;/p&gt;
+
+&lt;p&gt;举个例子：人的生存需要水资源，但是水资源我们自己本身没有多余的，所以需要从外界来获取，所以水资源就是人的 &lt;strong&gt;依赖&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class People
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    private &lt;span class=&quot;nv&quot;&gt;$_water&lt;/span&gt;;
+
+    public &lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;drink&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Water &lt;span class=&quot;nv&quot;&gt;$water&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;$this&lt;/span&gt;-&amp;gt;_water &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$water&lt;/span&gt;;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;代码很容易理解，但是也不容易理解+_+。&lt;/p&gt;
+
+&lt;p&gt;在这块代码中我们可以看到有一个Water的对象被赋值给People的一个变量中，但是发现这个Water对象是从外界注入到类中的，而不是硬编码到People类中，这样子的做饭的好处有两个：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;这样子相当于把代码从硬编码从解放出来了，这个可以在业务中考虑，因为人是喝水的，但是喝的水可以是不同的品种的（可以是百岁山啊，怡宝啊等），所以如果是硬编码到代码中的话如果是需求一变，那么就需要重新修改代码了，如果是这个依赖是注入的话那么就实现了代码的解耦了&lt;/li&gt;
+  &lt;li&gt;还有一个好处就是方便进行测试，因为这个Water的对象是外界注入的，在测试的时候就编程可控的了&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;什么叫做依赖查找？&lt;/h4&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;依赖查找更加主动，在需要的时候通过调用框架提供的方法来获取对象，获取时需要提供相关的配置文件路径、key等信息来确定获取对象的状态。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;依赖查找和依赖注入的区别&lt;/h4&gt;
+&lt;p&gt;依赖注入是一种被动的行为，而依赖查找是一种主动的行为。就像是我需要一种东西，然后别人就给我一种东西，而依赖查找更像是，我需要一种东西，然后我自己通过配置去查找一种东西。&lt;/p&gt;
+
+&lt;h4 id=&quot;ioc&quot;&gt;Ioc出场&lt;/h4&gt;
+
+&lt;p&gt;通过之前的代码，我们终于可以把依赖从宿主类中的硬编码解耦出来了，但是还是存在一个问题，那就是每次我去实例化一个类的时候还是需要自己去手动的实例化一个我想要注入的类，然后注入到宿主类中，(⊙o⊙)… 虽然解耦出来，但是用得还是很不方便啊，程序员就是为了解决问题，好吧，通过查找了一下万能的wiki相关的控制反转的概念：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;控制反转（Inversion of Control，缩写为IoC），是面向对象编程中的一种设计原则，可以用来减低计算机代码之间的耦合度。其中最常见的方式叫做依赖注入（Dependency Injection，简称DI），还有一种方式叫“依赖查找”（Dependency Lookup）。通过控制反转，对象在被创建的时候，由一个调控系统内所有对象的外界实体，将其所依赖的对象的引用传递给它。也可以说，依赖被注入到对象中。 – 维基百科&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;好吧，现在需要一个系统，能够帮助我们自动的注入相关的依赖还有能够进行依赖查找，现在来查看下laravel的做法&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;namespace App&lt;span class=&quot;se&quot;&gt;\J&lt;/span&gt;obs;
+
+use App&lt;span class=&quot;se&quot;&gt;\U&lt;/span&gt;ser;
+use Illuminate&lt;span class=&quot;se&quot;&gt;\C&lt;/span&gt;ontracts&lt;span class=&quot;se&quot;&gt;\M&lt;/span&gt;ail&lt;span class=&quot;se&quot;&gt;\M&lt;/span&gt;ailer;
+use Illuminate&lt;span class=&quot;se&quot;&gt;\C&lt;/span&gt;ontracts&lt;span class=&quot;se&quot;&gt;\B&lt;/span&gt;us&lt;span class=&quot;se&quot;&gt;\S&lt;/span&gt;elfHandling;
+
+class PurchasePodcast implements SelfHandling
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    /&lt;span class=&quot;k&quot;&gt;**&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; The mailer implementation.
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;/
+    protected &lt;span class=&quot;nv&quot;&gt;$mailer&lt;/span&gt;;
+
+    /&lt;span class=&quot;k&quot;&gt;**&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; Create a new instance.
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; @param  Mailer  &lt;span class=&quot;nv&quot;&gt;$mailer&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; @return void
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;/
+    public &lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;__construct&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Mailer &lt;span class=&quot;nv&quot;&gt;$mailer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$this&lt;/span&gt;-&amp;gt;mailer &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$mailer&lt;/span&gt;;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    /&lt;span class=&quot;k&quot;&gt;**&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; Purchase a podcast.
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; @return void
+     &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;/
+    public &lt;span class=&quot;k&quot;&gt;function &lt;/span&gt;handle&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        //
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;借用下laravel文档中的一段代码，现在这个类中在构造函数中是注入了Mailer对象依赖，但是现在我们不需要自己来注入，因为laravel已经帮我们做好了，如果是按照下面的代码走一遍，你会发现程序能够正常的运行&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$reflector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; new ReflectionClass&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;App\Jobs\PurchasePodcast&#39;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$reflector&lt;/span&gt;-&amp;gt;isInstantiable&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$user&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$refector&lt;/span&gt;-&amp;gt;newInstance&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;; //in other &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; you can send any arguments
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;因为在实例化类的时候，laravel通过反射获取了构造函数的相关的参数，然后通过命名空间来获取需要的相关的类或者接口，然后通过调度系统中相关的映射关系来得到正确的解析之后注入到类中，简直不能再棒了…&lt;/p&gt;
+
+&lt;p&gt;现在我们已经大概理解了Ioc，接下来的一些博文将会说一下如何自己实现Ioc，反正很简单…&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 10 Jul 2016 22:47:59 +0800</pubDate>
+        <link>http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/</link>
+        <guid isPermaLink="true">http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/</guid>
+        
+        <category>设计模式</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>数据库的锁机制</title>
+        <description>&lt;hr /&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;锁&lt;/h3&gt;
+
+&lt;p&gt;数据库是一种存储信息的容器，可以供给多个用户使用，允许多个用户同时使用数据库系统，这样子的业务需求就将导致一个问题就是：可能同时存在多个事务并发执行，这个时候就要保证数据库能够合理地并发运行。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-1&quot;&gt;并发执行&lt;/h3&gt;
+
+&lt;p&gt;很多软件开发都是和操作系统的思想是一样的，现在借此机会，回顾一下操作系统的发展，一开始的操作系统是单道批处理系统，在内存中只是存在一道程序，每次执行完毕了之后，才从磁盘后备队列中取出下一道程序进入内存执行，这样子的执行方式导致了一个问题就是，计算机的系统资源没能够很好的利用起来，本身的cpu和i/o矛盾很严重，
+为了能够更加好的利用计算机的系统资源，所以就引入了进程的概念，同时引入了多道批处理的方式，同时把多个程序封装成进程放在内存中，然后通过进程调度算法来分配cpu资源，这样子稍微缓解了cpu和i/o操作的矛盾，节省了很多在i/o操作上面浪费的时间，这个就是并发执行的概念。当然，并发操作的存在也引入了很多关于资源管理
+的问题，互斥锁、信号量等方式是进程之间进行通信的方式，同时也是资源分配的一种手段，死锁的预防和检测也为数据库的并发问题提供了一个解决问题的思想。接下来，就按照从操作系统的角度对数据库的锁的知识进行比较详细的理解。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;三种方式&lt;/h3&gt;
+
+&lt;p&gt;数据库的并发控制方式主要是三种方式：&lt;strong&gt;封锁&lt;/strong&gt;，&lt;strong&gt;时间戳&lt;/strong&gt;，&lt;strong&gt;乐观控制法&lt;/strong&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;封锁&lt;/h3&gt;
+
+&lt;p&gt;封锁：当一个事务的操作涉及到系统中的某个资源的时候，则对这个资源加上锁，加上了锁之后，这个事务能够对这个资源进行相应的操作，而且在当前这个事务未对这个资源解锁之前，其他的事务不能对这个资源进行允许的操作之外的操作。
+排它锁（写锁）：当一个事务对资源加上排它锁的时候，其他事务在这个事务对此资源解锁之前不能进行读写操作。
+共享锁（读锁）：当一个事务对资源加上共享锁的时候，其他事务在这个事务对此资源解锁之前不能进行写操作。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;活锁&lt;/h4&gt;
+
+&lt;p&gt;活锁指的是任务或者执行者没有被阻塞，由于某些条件没有满足，导致一直重复尝试，失败，尝试，失败。如果事务T1封锁了数据R,事务T2又请求封锁R，于是T2等待。T3也请求封锁R，当T1释放了R上的封锁后，系统首先批准了T3的请求，
+T2仍然等待。然后T4又请求封锁R，当T3释放了R上的封锁之后，系统又批准了T4的请求……T2可能永远等待。&lt;/p&gt;
+
+&lt;p&gt;联想：进程在内存中是通过某种算法获取到cpu资源，避免长时间在内存中而不能运行从而浪费内存资源，也不能够得到较好的用户体验，为此，有这么一些进程调度算法：
+1、（普通）先来先服务，短作业优先算法
+2、（优先权）非抢占式优先权算法和抢占式优先权调度，静态优先权和动态优先权
+3、（响应比）高响应比
+4、（时间片）时间片轮转，多级反馈队列&lt;/p&gt;
+
+&lt;h4 id=&quot;section-5&quot;&gt;死锁&lt;/h4&gt;
+
+&lt;p&gt;多数情况下，可以认为如果一个资源被锁定，它总会在以后某个时间被释放。而死锁发生在当多个进程访问同一数据库时，其中每个进程拥有的锁都是其他进程所需的，由此造成每个进程都无法继续下去。简单的说，进程A等待进程B释放他的资源，
+B又等待A释放他的资源，这样就互相等待就形成死锁。&lt;/p&gt;
+
+&lt;p&gt;联想：在操作系统中，为了解决死锁，常用的方式是预防死锁，或者是在产生死锁的时候通过检测，然后kill掉一些优先级比较低的进程，从而破坏了死锁的环路解决死锁的问题&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;预防死锁&lt;/strong&gt;：
+1、摒弃“请求和保持”条件。进程运行的开始之前，一次性申请接下来要用到的所有的资源，如果是不能全部都一次性申请到，那么就先全部不申请，这样子就避免了在并发执行的时候，一个进程请求了一份资源之后保持着对资源的占用继续请求别的资源的问题。
+2、摒弃“不剥夺”条件。进程本身保持了一部分资源，在继续请求其他的资源的时候无法请求成功，则先释放之前保持的资源，在进程重新运行的时候重新请求。
+3、摒弃“环路”问题。在死锁出现在的时候，一般都是进程和资源的关系成一种环路状态，如果是避免产生这样子的环路情况，则能够解决死锁问题。&lt;/p&gt;
+
+&lt;p&gt;死锁的诊断：
+1、&lt;strong&gt;超时法&lt;/strong&gt;。如果是某个事务在指定的时间没能够完成运行，则表示死锁，但是这种方式很容易造成误判，超时的时间设置涉及到计算机的性能和当前的业务的情况。
+2、&lt;strong&gt;等待图法&lt;/strong&gt;。通过G=(T,U)，判断图中是否存在环路，如果是存在环路则表示存在死锁，提前避免。&lt;/p&gt;
+
+&lt;p&gt;检测死锁之后排除死锁的方式：
+1、剥夺资源。
+2、撤销进程。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-6&quot;&gt;可串行化调度&lt;/h3&gt;
+
+&lt;p&gt;串行化调度：执行结果等价于串行调度，这样子的调度叫做可串行化的调度。可串行性是并发事务正确调度的准则。
+&lt;strong&gt;冲突操作&lt;/strong&gt;： 不同的事务对同一个数据的读写操作和写写操作。&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 冲突操作，不能做交换操作&lt;/span&gt;
+R1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; and W2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+W1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; and W2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;不同事务的冲突操作和同一个事务的两个操作是不能交换的。
+一个调度S在保证冲突操作的次序不变的情况下，通过交换两个事务不冲突操作的次序得到了另一个调度S’，如果是得到的调度是串行的，称调度S为冲突可串行化的调度。
+一个调度是冲突可串行化，一定是可串行化的调度&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 可以看到S1和S2都是串行化调度，所以S是可冲突串行化调度，而S1和S2是变换非冲突操作产生的&lt;/span&gt;
+S &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+S1 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+S2 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w1&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;A&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;r2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;w2&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;B&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;section-7&quot;&gt;两段锁协议&lt;/h3&gt;
+
+&lt;p&gt;两段锁协议：
+1、在对任何数据进行读写操作之前，首先分两个阶段对数据项加锁和解锁。
+2、在释放一个封锁之后，事务不再申请和获得任何其他的封锁&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 封锁序列&lt;/span&gt;
+SlockA SlockB SlockC     UlockA UlockB UlockC
+/&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;---- 扩展阶段 -----&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;/   /&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;------ 收缩阶段 ----&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;section-8&quot;&gt;封锁的粒度&lt;/h3&gt;
+
+&lt;p&gt;封锁粒度：封锁对象的大小称为封锁粒度。封锁对象可以是物理单元，也可以是逻辑单元。
+封锁单元的选择要结合业务的需求，如果是封锁单元过小，则可能加锁和解锁过于频发，从而消耗过多不必要的系统资源，如果封锁单元过大，则可能封锁时锁住了过多的系统资源，从而导致系统的并发能力下降。
+因为封锁单元大小比较难于选择，所以可以在同一个系统中使用多个封锁粒度（多粒度封锁）&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;多粒度封锁&lt;/h4&gt;
+
+&lt;p&gt;多粒度树：把数据库的资源定义成一棵多粒度树，我们可以对多粒度树中的任何一个节点进行封锁，如果我们指明对某个节点进行加锁，则表示这个节点被&lt;strong&gt;显示加锁&lt;/strong&gt;，则此节点的子节点被&lt;em&gt;隐式加锁&lt;/em&gt;，子节点都是被加上了同父节点一样的锁。
+但是因为显示加锁和隐式加锁的存在，所以在查询资源是否被加锁的时候要进行过多的判断操作，所以使用到意向锁来简化这些操作。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-10&quot;&gt;意向锁&lt;/h4&gt;
+
+&lt;p&gt;意向锁：如果对一个节点加意向锁，则说明该节点的下层节点正在被加锁，对任一节点加锁时，必须先对他的上层加意向锁&lt;/p&gt;
+
+&lt;p&gt;1、&lt;strong&gt;IS锁&lt;/strong&gt;：如果对一个数据对象加了IS锁，表示他得后裔节点加了S锁
+2、&lt;strong&gt;IX锁&lt;/strong&gt;：如果对一个数据对象加了IX锁，表示他得后裔节点加了X锁
+3、&lt;strong&gt;SIX锁&lt;/strong&gt;：如果对一个数据对象加了SIX锁（SIX=S+IX)，表示对 他 加S锁，再加IX锁。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;section-11&quot;&gt;悲观锁&lt;/h3&gt;
+
+&lt;p&gt;假定会发生并发冲突，屏蔽一切可能违反数据完整性的操作。悲观锁假定其他用户企图访问或者改变你正在访问、更改的对象的概率是很高的，因此在悲观锁的环境中，在你开始改变此对象之前就将该对象锁住，
+并且直到你提交了所作的更改之后才释放锁。悲观的缺陷是不论是页锁还是行锁，加锁的时间可能会很长，这样可能会长时间的限制其他用户的访问，也就是说悲观锁的并发访问性不好。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-12&quot;&gt;乐观锁&lt;/h3&gt;
+
+&lt;p&gt;假设不会发生并发冲突，只在提交操作时检查是否违反数据完整性。乐观锁不能解决脏读的问题。乐观锁则认为其他用户企图改变你正在更改的对象的概率是很小的，因此乐观锁直到你准备提交所作的更改时才将对象锁住，
+当你读取以及改变该对象时并不加锁。可见乐观锁加锁的时间要比悲观锁短，乐观锁可以用较大的锁粒度获得较好的并发访问性能。但是如果第二个用户恰好在第一个用户提交更改之前读取了该对象，那么当他完成了自己的更改进行提交时，
+数据库就会发现该对象已经变化了，这样，第二个用户不得不重新读取该对象并作出更改。这说明在乐观锁环境中，会加并发用户读取对象的次数。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-13&quot;&gt;乐观锁运用&lt;/h4&gt;
+
+&lt;p&gt;1、使用自增长的整数表示数据版本号。更新时检查版本号是否一致，比如数据库中数据版本为6，更新提交时version=6+1,使用该version值(=7)与数据库version+1(=7)作比较，如果相等，则可以更新，如果不等则有可能其他程序已更新该记录，所以返回错误。&lt;/p&gt;
+
+&lt;p&gt;2、使用时间戳来实现.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;碎碎的写了一下一些关于锁的知识，后期加上多一些的例证和代码举例。&lt;/p&gt;
+</description>
+        <pubDate>Mon, 02 May 2016 07:28:08 +0800</pubDate>
+        <link>http://brittyu.xyz/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/</link>
+        <guid isPermaLink="true">http://brittyu.xyz/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/</guid>
+        
+        <category>sql</category>
+        
+        <category>linux</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>autoconf使用</title>
+        <description>&lt;p&gt;参考鸟哥的博客&lt;a href=&quot;http://www.laruence.com/&quot;&gt;http://www.laruence.com/&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;section&quot;&gt;背景知识/学习原因&lt;/h2&gt;
+
+&lt;p&gt;现在linux是很火的操作系统，在很多服务器上都使用了linux的操作系统，作为一名linux菜鸟，也是希望以后能够有机会能够在开发一些关于linux的软件，能够给linux的社区做点共享，而且最近也是在看一些关于linux软件的源码，所以趁着这个机会，把linux软件的编译流程也走一下，之前的软件基本上都是通过网上找一些安装的教程，然后按照教程走一遍，然而并没有深入的理解configure，make，这些工作的大概的思想，有幸能够在网上搜到了php大神鸟哥的博客讲到了关于这方面的内容，看完了之后感觉学习到了很多，所以把这些自己的感受到都记录下来，当做学习的一个积累，也顺便培养下自己的写博客的习惯。&lt;/p&gt;
+
+&lt;h2 id=&quot;makefile&quot;&gt;Makefile介绍&lt;/h2&gt;
+
+&lt;p&gt;Makefile是用于自动编译和链接的 ,一个工程有很多文件组成,每一个文件的改变都会导致工程的重新链接,但是不是 所有的文件都需要重新编译,Makefile中纪录有文件的信息,在 make时会决定在链接的时候需要重新编译哪些文件.
+Makefile的宗旨就是 ：让编译器知道要编译一个文件需要依赖其他的 哪些文件.当那些依赖文件有了改变,编译器会自动的发现最终的生成文件已经过时,而重新编译相应的 模块.
+Makefile的 基本结构不是 很复杂,但当一个程序开发人员开始写Makefile时,经常会怀疑自己写的 是 否符合惯例,而且自己写的 Makefile经常和自己的 开发环境相关联,当系统环境变量或路径发生了变化后,Makefile可能还要跟着修改.这样就造成了手工书写Makefile的 诸多问题,automake恰好能很好地帮助我们解决这些问题.使用automake,程序开发人员只需要写一些简单的 含有预定义宏的 文件,由autoconf根据一个宏文件生成configure,由automake根据另一个宏文件生成Makefile.in,再使用configure依据Makefile.in来生成一个符合惯例的 Makefile.下面我们将详细介绍Makefile的 automake生成方法.&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;使用的环境&lt;/h2&gt;
+
+&lt;p&gt;本文所提到的程序是基于Linux发行版本:Ubuntu12.04,它包含了我们要用到的autoconf,automake.&lt;/p&gt;
+
+&lt;h2 id=&quot;helloworld&quot;&gt;从helloworld入手&lt;/h2&gt;
+&lt;p&gt;### 建目录
+&lt;code class=&quot;highlighter-rouge&quot;&gt;bash
+$ mdkir c-autoconf
+$ cd c-autoconf
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;helloc&quot;&gt;编写hello.c&lt;/h3&gt;
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#incluede &amp;lt;stdio.&amp;gt;
+&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[])&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;hello world&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;autoscan&quot;&gt;autoscan上场&lt;/h3&gt;
+
+&lt;p&gt;通过autoscan来根据目录下的文件来生成configure.scan文件
+&lt;code class=&quot;highlighter-rouge&quot;&gt;bash
+$ ls
+$ autoscan.log  configure.scan  hello.c
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;把configure.scan修改名字变成configure.in，修改configure.in文件，&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;cp&quot;&gt;# -*- Autoconf -*-
+&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;# Process this file with autoconf to produce a configure script.
+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AC_INIT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+ &lt;span class=&quot;n&quot;&gt;AM_INIT_AUTOMAKE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+ &lt;span class=&quot;cp&quot;&gt;# Checks for programs.
+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AC_PROG_CC&lt;/span&gt;
+ &lt;span class=&quot;cp&quot;&gt;# Checks for libraries.
+&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;# Checks for header files.
+&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;# Checks for typedefs, structures, and compiler characteristics.
+&lt;/span&gt; &lt;span class=&quot;cp&quot;&gt;# Checks for library functions.
+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AC_OUTPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Makefile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;aclocal-&quot;&gt;aclocal 上场&lt;/h3&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;aclocal
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ls
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;autom4te.cache  autoscan.log  configure.in  hello.c
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;autoconf-&quot;&gt;autoconf 上场&lt;/h3&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ autoconf
+$ ls
+$ autom4te.cache  autoscan.log  configure  configure.in  hello.c
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;aclocalautoconf&quot;&gt;关于aclocal和autoconf&lt;/h3&gt;
+
+&lt;p&gt;aclocal通过configure.in来生成autom4te.cache，然后autoconf通过生成的autom4te.cache来生成configure文件&lt;/p&gt;
+
+&lt;p&gt;大家可以看到configure.in内容是 一些宏定义,这些宏经autoconf处理后会变成检查系统特性.环境变量.软件必须的 参数的 shell脚本.&lt;/p&gt;
+
+&lt;p&gt;autoconf 是 用来生成自动配置软件源代码脚本（configure）的 工具.configure脚本能独立于autoconf运行，且在 运行的 过程中,不需要用户的 干预.&lt;/p&gt;
+
+&lt;p&gt;要生成configure文件,你必须告诉autoconf如何找到你所用的宏.方式是使用aclocal程序来生成你的aclocal.m4.&lt;/p&gt;
+
+&lt;p&gt;aclocal根据configure.in文件的 内容,自动生成aclocal.m4文件.aclocal是 一个perl 脚本程序,它的定义是 ：”aclocal – create aclocal.m4 by scanning configure.ac”.&lt;/p&gt;
+
+&lt;p&gt;autoconf从configure.in这个列举编译软件时所需要各种参数的 模板文件中创建configure.&lt;/p&gt;
+
+&lt;p&gt;autoconf需要GNU m4宏处理器来处理aclocal.m4,生成configure脚本.m4是 一个宏处理器.将输入拷贝到输出,同时将宏展开.宏可以是 内嵌的 ,也可以是 用户定义的 .除了可以展开宏,m4还有一些内建的 函数,用来引用文件,执行命令,整数运算,文本操作,循环等.m4既可以作为编译器的 前端,也可以单独作为一个宏处理器.&lt;/p&gt;
+
+&lt;h3 id=&quot;makefileam&quot;&gt;新建一个Makefile.am文件&lt;/h3&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;touch Makefile.am
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;vim Makefile.am
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;AUTOMAKE_OPTIONS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;foreign&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;bin_PROGRAMS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;helloworld_SOURCES&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;automake会根据你写的 Makefile.am来自动生成Makefile.in.
+Makefile.am中定义的 宏和目标,会指导automake生成指定的代码.例如,宏bin_PROGRAMS将导致编译和连接的目标被生成.&lt;/p&gt;
+
+&lt;h3 id=&quot;automake-&quot;&gt;automake 上场&lt;/h3&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;automake --add-missing
+ configure.in: installing &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;./install-sh&lt;span class=&quot;s1&quot;&gt;&#39;
+ configure.in: installing `./mkinstalldirs&#39;&lt;/span&gt;
+ configure.in: installing &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;./missing&lt;span class=&quot;s1&quot;&gt;&#39;
+ Makefile.am: installing `./depcomp&#39;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;开始编译&lt;/h3&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./configure
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;a BSD-compatible install... /usr/bin/install -c
+ checking whether build environment is sane... yes
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;a thread-safe mkdir -p... /bin/mkdir -p
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;gawk... no
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;mawk... mawk
+ checking whether make sets &lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;MAKE&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt;... yes
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;gcc... gcc
+ checking whether the C compiler works... yes
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;C compiler default output file name... a.out
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;suffix of executables...
+ checking whether we are cross compiling... no
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;suffix of object files... o
+ checking whether we are using the GNU C compiler... yes
+ checking whether gcc accepts -g... yes
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;gcc option to accept ISO C89... none needed
+ checking &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;style of include used by make... GNU
+ checking dependency style of gcc... gcc3
+ configure: creating ./config.status
+ config.status: creating Makefile
+ config.status: executing depfiles commands
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;现在同时可以看到我们已经是生成了Makefile了&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ls -al Makefile
+ -rw-rw-r-- 1 vagrant vagrant 19590 Aug  9 14:03 Makefile
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;come-onmakefile&quot;&gt;come on，开始使用makefile来编译代码&lt;/h3&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;make
+gcc -DPACKAGE_NAME&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE_TARNAME&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE_VERSION&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE_STRING&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE_BUGREPORT&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE_URL&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;\&quot;&lt;/span&gt; -DPACKAGE&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;hello&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; -DVERSION&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;1.0&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; -I.     -g -O2 -MT hello.o -MD -MP -MF .deps/hello.Tpo -c -o hello.o hello.c
+mv -f .deps/hello.Tpo .deps/hello.Po
+gcc  -g -O2   -o hello hello.o
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;开始运行&lt;/h3&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./hello
+ hello world
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;section-4&quot;&gt;深入浅出&lt;/h2&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;　　1. autoscan
+　　autoscan是 用来扫描源代码目录生成configure.scan文件的 .autoscan
+可以用目录名做为参数,但如果你不使用参数的 话,那么autoscan将认为使用的是当前目录.
+autoscan将扫描你所指定目录中的 源文件,并创建configure.scan文件.
+　　2. configure.scan
+　　configure.scan包含了系统配置的 基本选项,里面都是 一些宏定义.我们需要将它改名为
+configure.in
+　　3. aclocal
+　　aclocal是 一个perl 脚本程序.aclocal根据configure.in文件的 内容
+,自动生成aclocal.m4文件.aclocal的 定义是 ：&quot;aclocal - create
+aclocal.m4 by scanning configure.ac&quot;.
+　　4. autoconf
+　　autoconf是 用来产生configure文件的 .configure是 一个脚本,它能设置
+源程序来适应各种不同的操作系统平台,并且根据不同的 系统来产生合适的 Makefile,从而可以使
+你的源代码能在不同的操作系统平台上被编译出来.
+　　configure.in文件的 内容是 一些宏,这些宏经过autoconf 处理后会变成检查系统
+特性.环境变量.软件必须的 参数的 shell脚本.configure.in文件中的 宏的 顺序并没
+有规定,但是 你必须在 所有宏的 最前面和最后面分别加上AC_INIT宏和AC_OUTPUT宏.
+　　在 configure.ini中：
+　　#号表示注释,这个宏后面的 内容将被忽略.
+　　AC_INIT(FILE)
+　　这个宏用来检查源代码所在 的 路径.
+AM_INIT_AUTOMAKE(PACKAGE, VERSION)
+　　 这个宏是 必须的 ,它描述了我们将要生成的 软件包的 名字及其版本号：PACKAGE是软件包
+的名字,VERSION是 版本号.当你使用make dist命令时,它会给你生成一个类似
+helloworld-1.0.tar.gz的 软件发行包,其中就有对应的 软件包的 名字和版本号.
+AC_PROG_CC
+　　这个宏将检查系统所用的 C编译器.
+AC_OUTPUT(FILE)
+　　这个宏是 我们要输出的 Makefile的 名字.
+　　我们在 使用automake时,实际上还需要用到其他的 一些宏,但我们可以用aclocal 来帮
+我们自动产生.执行aclocal后我们会得到aclocal.m4文件.
+　　产生了configure.in和aclocal.m4 两个宏文件后,我们就可以使用autocon
+f来产生configure文件了.
+　　5. Makefile.am
+　　Makefile.am是 用来生成Makefile.in的 ,需要你手工书写.Makefile.
+am中定义了一些内容：
+AUTOMAKE_OPTIONS
+　　这个是 automake的 选项.在 执行automake时,它会检查目录下是 否存在 标准
+GNU软件包中应具备的各种文件,例如AUTHORS.ChangeLog.NEWS等文件.
+我们将其设置成foreign时,automake会改用一般软件包的 标准来检查.
+bin_PROGRAMS
+　　这个是 指定我们所要产生的 可执行文件的 文件名.如果你要产生多个可执行文件,
+那么在各个名字间用空格隔开.
+helloworld_SOURCES
+　　这个是 指定产生&quot;helloworld&quot;时所需要的 源代码.如果它用到了多个源文件,
+那么请使用空格符号将它们隔开.比如需要helloworld.h,helloworld.c那么请写成:
+helloworld_SOURCES= helloworld.h helloworld.c.
+　　如果你在 bin_PROGRAMS定义了多个可执行文件,则对应每个可执行文件都要定义相对的
+filename_SOURCES.
+　　6. automake
+　　我们使用automake --add-missing来产生Makefile.in.
+　　选项--add-missing的 定义是 &quot;add missing standard files
+ to package&quot;,它会让automake加入一个标准的 软件包所必须的 一些文件.
+ 　　我们用automake产生出来的 Makefile.in文件是 符合GNU Makefile惯例
+ 的 ,接下来我们只要执行configure这个shell 脚本就可以产生合适的 Makefile 文
+ 件了.
+ 　　7. Makefile
+ 　　在 符合GNU Makefiel惯例的 Makefile中,包含了一些基本的 预先定义的 操作：
+
+ make
+ 　　根据Makefile编译源代码,连接,生成目标文件,可执行文件.
+ make clean
+ 　　清除上次的 make命令所产生的 object文件（后缀为&quot;.o&quot;的 文件）及可执行文件.
+ make install
+ 　　将编译成功的 可执行文件安装到系统目录中,一般为/usr/local/bin目录.
+ make dist
+ 　　产生发布软件包文件（即distribution package）.这个命令将会将可执行文件及相关
+ 文件打包成一个tar.gz压缩的 文件用来作为发布软件的 软件包.
+ 　　它会在 当前目录下生成一个名字类似&quot;PACKAGE-VERSION.tar.gz&quot;的 文件.PA
+ CKAGE和VERSION,是 我们在 configure.in中定义的 AM_INIT_AUTOM
+ AKE(PACKAGE, VERSION).
+ make distcheck
+ 　　生成发布软件包并对其进行测试检查,以确定发布包的正确性.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+</description>
+        <pubDate>Tue, 26 Apr 2016 04:55:56 +0800</pubDate>
+        <link>http://brittyu.xyz/2016/04/26/autoconf%E4%BD%BF%E7%94%A8/</link>
+        <guid isPermaLink="true">http://brittyu.xyz/2016/04/26/autoconf%E4%BD%BF%E7%94%A8/</guid>
+        
+        <category>linux</category>
+        
+        <category>c</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>vim的正则匹配</title>
+        <description>&lt;hr /&gt;
+
+&lt;h4 id=&quot;vim&quot;&gt;关于vim正则替换的一些使用&lt;/h4&gt;
+
+&lt;p&gt;一起从早上碰见的一个小插曲开始，问题大概是这样子的，直接上代码&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;?php
+return [
+	0 =&amp;gt; &#39;自主’，
+	1 =&amp;gt; &#39;手动&#39;,
+	2 =&amp;gt; &#39;半自动&#39;,
+	... // more than ten line
+];
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;这个数组我是写在配置文件中的，现在是因为处理数据的方式改变了，我需要把数组中的键值调换过来。&lt;/p&gt;
+
+&lt;p&gt;嘻嘻，作为一个vim党，脑海中飘过的是通过全局匹配替换的方法来做这个事情，指令也很简单:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;:%s#\(\d*\) =&amp;gt; \(&#39;.*&#39;\)#\2 =&amp;gt; \1#
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;写完了之后发现自己虽然平时会经常用到vim的正则，但是貌似没有去总结过一些这些东西，乘着心血来潮，总结一下常用到的一些正则匹配的规则。&lt;/p&gt;
+
+&lt;p&gt;vim 匹配的规则是&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;:[range]s/from/to/[flags]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h5 id=&quot;flag&quot;&gt;flag&lt;/h5&gt;
+&lt;ul&gt;
+  &lt;li&gt;c : 在替换之前询问&lt;/li&gt;
+  &lt;li&gt;e : 不显示错误&lt;/li&gt;
+  &lt;li&gt;g : 不询问，整个文件替换&lt;/li&gt;
+  &lt;li&gt;i : 不区分大小写&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h5 id=&quot;section&quot;&gt;元字符&lt;/h5&gt;
+&lt;p&gt;###### 文本数字匹配
+*  . : 匹配任意字符
+*  [abc] : 匹配方括号中的任意一个字符，可用-表示字符范围。如[a-z0-9]匹配小写字母和数字（例子中表示匹配abc中的其中一个就行
+*  [^abc] : 匹配除方括号中字符之外的任意字符（例子中表示不匹配abc中的任何一个
+*  	\d : 匹配阿拉伯数字，等同于[0-9]
+*   \D : 匹配阿拉伯数字之外的任意字符，等同于[^0-9]
+*   \x : 匹配十六进制数字，等同于[0-9A-Fa-f]
+*   \X : 匹配十六进制数字之外的任意字符，等同于[^0-9A-Fa-f]&lt;/p&gt;
+
+&lt;h6 id=&quot;section-1&quot;&gt;多个匹配&lt;/h6&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;\l : 匹配[a-z]&lt;/li&gt;
+  &lt;li&gt;\L : 匹配[^a-z]&lt;/li&gt;
+  &lt;li&gt;\u : 匹配[A-Z]&lt;/li&gt;
+  &lt;li&gt;\U : 匹配[^A-Z]&lt;/li&gt;
+  &lt;li&gt;\w : 匹配单词字母，等同于[0-9A-Za-z_]&lt;/li&gt;
+  &lt;li&gt;\W : 匹配单词字母之外的任意字符，等同于[^0-9A-Za-z_]&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h6 id=&quot;section-2&quot;&gt;特殊符号匹配&lt;/h6&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;\t : 匹配&lt;TAB&gt;字符&lt;/TAB&gt;&lt;/li&gt;
+  &lt;li&gt;\s : 匹配空白字符，等同于[\t]&lt;/li&gt;
+  &lt;li&gt;\S : 匹配非空白字符，等同于[^\t]&lt;/li&gt;
+  &lt;li&gt;\* : 匹配* 字符&lt;/li&gt;
+  &lt;li&gt;\. : 匹配. 字符&lt;/li&gt;
+  &lt;li&gt;\/ : 匹配 / 字符&lt;/li&gt;
+  &lt;li&gt;\\ : 匹配 \ 字符&lt;/li&gt;
+  &lt;li&gt;\[ : 匹配 [ 字符&lt;/li&gt;
+  &lt;li&gt;\] : 匹配 ] 字符&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h6 id=&quot;section-3&quot;&gt;范围匹配&lt;/h6&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;ul&gt;
+      &lt;li&gt;:匹配0-任意个&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;+ : 匹配1-任意个&lt;/li&gt;
+  &lt;li&gt;\? : 匹配0-1个&lt;/li&gt;
+  &lt;li&gt;{n,m} : 匹配n-m个&lt;/li&gt;
+  &lt;li&gt;{n} : 匹配n个&lt;/li&gt;
+  &lt;li&gt;{n,} : 匹配n到任一多个&lt;/li&gt;
+  &lt;li&gt;{,m} : 匹配0到m个&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h5 id=&quot;section-4&quot;&gt;变量替换&lt;/h5&gt;
+&lt;p&gt;在vim中还存在一个东西就是变量替换，既是如果是用(和)包含起来的匹配字段，可以用1,2来访问，从我之前的例子来说明&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;:%s#\(\d*\) =&amp;gt; \(&#39;.*&#39;\)#\2 =&amp;gt; \1#
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;(\d&lt;em&gt;) 匹配的是前面的数字，接下来我可以通过\1变量来使用我匹配到的文本
+(’.&lt;/em&gt;’) 匹配的是小括号中的文本，接下来我们可以通过\2变量来使用我们之前匹配到的文本&lt;/p&gt;
+
+&lt;p&gt;vim中包含着很多与编程相关的东西，接下来计划把vim里内彻底撸一遍来，更加深入的理解这个神器。&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 17 Apr 2016 08:16:28 +0800</pubDate>
+        <link>http://brittyu.xyz/2016/04/17/vim%E7%9A%84%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/</link>
+        <guid isPermaLink="true">http://brittyu.xyz/2016/04/17/vim%E7%9A%84%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/</guid>
+        
+        <category>vim</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

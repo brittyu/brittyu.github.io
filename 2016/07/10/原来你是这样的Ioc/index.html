@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keyword"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>原来你是这样的Ioc - 小圣的博客 | Yu's Blog</title>
+
+    <link rel="canonical" href="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Yu's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/home-bg.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        background-image: url('/img/home-bg.jpg')
+    }
+</style>
+<header class="intro-header" >
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#设计模式" title="设计模式">设计模式</a>
+                        
+                    </div>
+                    <h1>原来你是这样的Ioc</h1>
+                    
+                    
+                    <h2 class="subheading"></h2>
+                    
+                    <span class="meta">Posted by Yu's Blog on July 10, 2016</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<hr />
+
+<p>世间万物的出现必然有原因：</p>
+
+<blockquote>
+  <p>早在2004年，Martin Fowler就提出了“哪些方面的控制被反转了？”这个问题。他总结出是依赖对象的获得被反转了，因为大多数应用程序都是由两个或是更多的类通过彼此的合作来实现业务逻辑，这使得每个对象都需要获取与其合作的对象（也就是它所依赖的对象）的引用。如果这个获取过程要靠自身实现，那么这将导致代码高度耦合并且难以维护和调试。 – 维基百科</p>
+</blockquote>
+
+<p>一开始我们都是写着这样子的代码</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class People
+<span class="o">{</span>
+    private <span class="nv">$_water</span>;
+
+    public <span class="k">function </span>setWater<span class="o">()</span>
+    <span class="o">{</span>
+        <span class="nv">$this</span>-&gt;_water <span class="o">=</span> new Water;
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>但是我们可以发现一个很蛋疼的问题，就是，卧槽，某一天我发现人进化了，不需要喝水了，而是喝汽油了，那么怎么办，因为现在这块代码中水资源和人是耦合在一起的，哭死，到处改，蛋疼，且不方便测试。OOP的编程可是一直都是强调高内聚低耦合的惹，不能让这件事情发生 …</p>
+
+<h4 id="section">什么叫做依赖（什么叫做依赖注入）？</h4>
+<p>我需要一种东西，但是我没有这种东西，这个东西就是我的依赖。</p>
+
+<p>举个例子：人的生存需要水资源，但是水资源我们自己本身没有多余的，所以需要从外界来获取，所以水资源就是人的 <strong>依赖</strong>。</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class People
+<span class="o">{</span>
+    private <span class="nv">$_water</span>;
+
+    public <span class="k">function </span>drink<span class="o">(</span>Water <span class="nv">$water</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="nv">$this</span>-&gt;_water <span class="o">=</span> <span class="nv">$water</span>;
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+<p>代码很容易理解，但是也不容易理解+_+。</p>
+
+<p>在这块代码中我们可以看到有一个Water的对象被赋值给People的一个变量中，但是发现这个Water对象是从外界注入到类中的，而不是硬编码到People类中，这样子的做饭的好处有两个：</p>
+
+<ul>
+  <li>这样子相当于把代码从硬编码从解放出来了，这个可以在业务中考虑，因为人是喝水的，但是喝的水可以是不同的品种的（可以是百岁山啊，怡宝啊等），所以如果是硬编码到代码中的话如果是需求一变，那么就需要重新修改代码了，如果是这个依赖是注入的话那么就实现了代码的解耦了</li>
+  <li>还有一个好处就是方便进行测试，因为这个Water的对象是外界注入的，在测试的时候就编程可控的了</li>
+</ul>
+
+<h4 id="section-1">什么叫做依赖查找？</h4>
+<blockquote>
+  <p>依赖查找更加主动，在需要的时候通过调用框架提供的方法来获取对象，获取时需要提供相关的配置文件路径、key等信息来确定获取对象的状态。</p>
+</blockquote>
+
+<h4 id="section-2">依赖查找和依赖注入的区别</h4>
+<p>依赖注入是一种被动的行为，而依赖查找是一种主动的行为。就像是我需要一种东西，然后别人就给我一种东西，而依赖查找更像是，我需要一种东西，然后我自己通过配置去查找一种东西。</p>
+
+<h4 id="ioc">Ioc出场</h4>
+
+<p>通过之前的代码，我们终于可以把依赖从宿主类中的硬编码解耦出来了，但是还是存在一个问题，那就是每次我去实例化一个类的时候还是需要自己去手动的实例化一个我想要注入的类，然后注入到宿主类中，(⊙o⊙)… 虽然解耦出来，但是用得还是很不方便啊，程序员就是为了解决问题，好吧，通过查找了一下万能的wiki相关的控制反转的概念：</p>
+
+<blockquote>
+  <p>控制反转（Inversion of Control，缩写为IoC），是面向对象编程中的一种设计原则，可以用来减低计算机代码之间的耦合度。其中最常见的方式叫做依赖注入（Dependency Injection，简称DI），还有一种方式叫“依赖查找”（Dependency Lookup）。通过控制反转，对象在被创建的时候，由一个调控系统内所有对象的外界实体，将其所依赖的对象的引用传递给它。也可以说，依赖被注入到对象中。 – 维基百科</p>
+</blockquote>
+
+<p>好吧，现在需要一个系统，能够帮助我们自动的注入相关的依赖还有能够进行依赖查找，现在来查看下laravel的做法</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>namespace App<span class="se">\J</span>obs;
+
+use App<span class="se">\U</span>ser;
+use Illuminate<span class="se">\C</span>ontracts<span class="se">\M</span>ail<span class="se">\M</span>ailer;
+use Illuminate<span class="se">\C</span>ontracts<span class="se">\B</span>us<span class="se">\S</span>elfHandling;
+
+class PurchasePodcast implements SelfHandling
+<span class="o">{</span>
+    /<span class="k">**</span>
+     <span class="k">*</span> The mailer implementation.
+     <span class="k">*</span>/
+    protected <span class="nv">$mailer</span>;
+
+    /<span class="k">**</span>
+     <span class="k">*</span> Create a new instance.
+     <span class="k">*</span>
+     <span class="k">*</span> @param  Mailer  <span class="nv">$mailer</span>
+     <span class="k">*</span> @return void
+     <span class="k">*</span>/
+    public <span class="k">function </span>__construct<span class="o">(</span>Mailer <span class="nv">$mailer</span><span class="o">)</span>
+    <span class="o">{</span>
+    <span class="nv">$this</span>-&gt;mailer <span class="o">=</span> <span class="nv">$mailer</span>;
+    <span class="o">}</span>
+
+    /<span class="k">**</span>
+     <span class="k">*</span> Purchase a podcast.
+     <span class="k">*</span>
+     <span class="k">*</span> @return void
+     <span class="k">*</span>/
+    public <span class="k">function </span>handle<span class="o">()</span>
+    <span class="o">{</span>
+        //
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>借用下laravel文档中的一段代码，现在这个类中在构造函数中是注入了Mailer对象依赖，但是现在我们不需要自己来注入，因为laravel已经帮我们做好了，如果是按照下面的代码走一遍，你会发现程序能够正常的运行</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="nv">$reflector</span> <span class="o">=</span> new ReflectionClass<span class="o">(</span><span class="s1">'App\Jobs\PurchasePodcast'</span><span class="o">)</span>;
+
+<span class="k">if</span> <span class="o">(</span><span class="nv">$reflector</span>-&gt;isInstantiable<span class="o">())</span> <span class="o">{</span>
+    <span class="nv">$user</span> <span class="o">=</span> <span class="nv">$refector</span>-&gt;newInstance<span class="o">()</span>; //in other <span class="k">case</span> you can send any arguments
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>因为在实例化类的时候，laravel通过反射获取了构造函数的相关的参数，然后通过命名空间来获取需要的相关的类或者接口，然后通过调度系统中相关的映射关系来得到正确的解析之后注入到类中，简直不能再棒了…</p>
+
+<p>现在我们已经大概理解了Ioc，接下来的一些博文将会说一下如何自己实现Ioc，反正很简单…</p>
+
+
+
+                <hr>
+
+                
+                <!-- 多说 Share start -->
+                </style>
+                <div class="ds-share"
+                    style="text-align: right"
+                    data-thread-key="/2016/07/10/原来你是这样的Ioc"
+                    data-title="原来你是这样的Ioc"
+                    data-url="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/"
+                    data-images="http://brittyu.xyz/img/home-bg.jpg"
+                    data-content="
+
+世间万物的出现必然有原因：
+
+
+  早在2004年，Martin Fowler就提出了“哪些方面的控制被反转了？”这个问题。他总结出是依赖对象的获得被... | 小圣的博客 | Yu's Blog " >
+                    <div class="ds-share-inline">
+                      <ul  class="ds-share-icons-16">
+                        <li data-toggle="ds-share-icons-more"><a class="ds-more" href="#">分享到：</a></li>
+                        <li><a class="ds-wechat flat" href="javascript:void(0);" data-service="wechat">微信</a></li>
+                        <li><a class="ds-weibo flat" href="javascript:void(0);" data-service="weibo">微博</a></li>
+                        <li><a class="ds-douban flat" href="javascript:void(0);" data-service="douban">豆瓣</a></li>
+                      </ul>
+                      <div class="ds-share-icons-more">
+                      </div>
+                    </div>
+                <hr>
+                </div>
+                <!-- 多说 Share end-->
+                
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/" data-toggle="tooltip" data-placement="top" title="数据库的锁机制">&larr; Previous Post</a>
+                    </li>
+                    
+                    
+                </ul>
+
+
+                
+                <!-- 多说评论框 start -->
+                <div class="comment">
+                    <div class="ds-thread"
+                        data-thread-key="/2016/07/10/原来你是这样的Ioc"
+                        data-title="原来你是这样的Ioc"
+                        data-url="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/" >
+                    </div>
+                </div>
+                <!-- 多说评论框 end -->
+                
+
+                
+
+            </div>
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+        				
+                            
+                				<a href="/tags/#linux" title="linux" rel="2">
+                                    linux
+                                </a>
+                            
+        				
+                            
+        				
+                            
+        				
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://brittyu.xyz">Yu's Blog</a></li>
+                    
+                        <li><a href="#">Foo</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    // dynamic User by Hux
+    var _user = 'brittyu';
+
+    // duoshuo comment query.
+    var duoshuoQuery = {short_name: _user };
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+</script>
+<!-- 多说公共JS代码 end -->
+
+
+
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("http://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                    
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a href="https://twitter.com/brittyuxs">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    <li>
+                        <a target="_blank" href="https://www.zhihu.com/people/pp23D">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa  fa-stack-1x fa-inverse">知</i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/234321654">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/brittyu">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Yu's Blog 2016
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("http://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
