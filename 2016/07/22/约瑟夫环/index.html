@@ -10,9 +10,9 @@
     <meta name="keyword"  content="">
     <link rel="shortcut icon" href="/img/favicon.ico">
 
-    <title>原来你是这样的Ioc - 小圣的博客 | Yu's Blog</title>
+    <title>约瑟夫环 - 小圣的博客 | Yu's Blog</title>
 
-    <link rel="canonical" href="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/">
+    <link rel="canonical" href="http://brittyu.xyz/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/">
 
     <!-- Bootstrap Core CSS -->
     <link rel="stylesheet" href="/css/bootstrap.min.css">
@@ -140,15 +140,15 @@
                 <div class="post-heading">
                     <div class="tags">
                         
-                        <a class="tag" href="/tags/#设计模式" title="设计模式">设计模式</a>
+                        <a class="tag" href="/tags/#算法" title="算法">算法</a>
                         
                     </div>
-                    <h1>原来你是这样的Ioc</h1>
+                    <h1>约瑟夫环</h1>
                     
                     
                     <h2 class="subheading"></h2>
                     
-                    <span class="meta">Posted by Yu's Blog on July 10, 2016</span>
+                    <span class="meta">Posted by Yu's Blog on July 22, 2016</span>
                 </div>
             </div>
         </div>
@@ -168,122 +168,127 @@
 
 				<hr />
 
-<p>世间万物的出现必然有原因：</p>
+<h3 id="section">约瑟夫环</h3>
+
+<p>前言： 貌似高中老师讲过，但是数学课被我睡过去了，罪孽深重啊，现在补过来</p>
 
 <blockquote>
-  <p>早在2004年，Martin Fowler就提出了“哪些方面的控制被反转了？”这个问题。他总结出是依赖对象的获得被反转了，因为大多数应用程序都是由两个或是更多的类通过彼此的合作来实现业务逻辑，这使得每个对象都需要获取与其合作的对象（也就是它所依赖的对象）的引用。如果这个获取过程要靠自身实现，那么这将导致代码高度耦合并且难以维护和调试。 – 维基百科</p>
+  <p>已知n个人（以编号1，2，3…n分别表示）围坐在一张圆桌周围。从编号为k的人开始报数，数到m的那个人出列；他的下一个人又从1开始报数，数到m的那个人又出列；依此规律重复下去，直到圆桌周围的人全部出列。通常解决这类问题时我们把编号从0~n-1，最后[1]  结果+1即为原问题的解</p>
 </blockquote>
 
-<p>一开始我们都是写着这样子的代码</p>
+<p>这个是约瑟夫环的问题的大概题目</p>
 
-<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class People
-<span class="o">{</span>
-    private <span class="nv">$_water</span>;
+<p>看到这个题目，我的脑海中闪过的是最直接的方式，就是仿照这个游戏过程来做</p>
 
-    public <span class="k">function </span>setWater<span class="o">()</span>
-    <span class="o">{</span>
-        <span class="nv">$this</span>-&gt;_water <span class="o">=</span> new Water;
-    <span class="o">}</span>
-<span class="o">}</span>
+<h4 id="section-1">模拟法</h4>
+
+<p>如果是按照这个游戏规则来模拟，那么，我可以建立一个首尾相连的链表，然后不断地循环这个链表，每次数到m的时候，被选中的单元就从链表中去掉，然后接着从下一个开始重新数到m的时候把该项去掉，不断的循环下去，直到最后剩下的唯一的一个单元，因为现在这边是从0~n-1，所以最后的结果是需要加1的，按照这种方法，编写出以下的代码，最近比较少写python，有点生疏了，不要介意，有什么问题可以和我讨论下 :P</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class Ysf:
+
+    def __init__<span class="o">(</span>self, step_size, amount<span class="o">)</span>:
+        self.step_size <span class="o">=</span> step_size
+        self.amount <span class="o">=</span> amount
+
+        self.items <span class="o">=</span> <span class="o">[]</span>
+        <span class="k">for </span>each <span class="k">in </span>range<span class="o">(</span>0, amount<span class="o">)</span>:
+            self.items.insert<span class="o">(</span>0, each<span class="o">)</span>
+
+        self.items.reverse<span class="o">()</span>
+
+    def run<span class="o">(</span>self<span class="o">)</span>:
+        <span class="k">while </span>len<span class="o">(</span>self.items<span class="o">)</span> &gt; 1:
+            <span class="k">for </span>each <span class="k">in </span>range<span class="o">(</span>0, self.step_size<span class="o">)</span>:
+                <span class="k">if</span> <span class="o">(</span>each + 1<span class="o">)</span> <span class="o">==</span> self.step_size:
+                    self.items.pop<span class="o">()</span>
+                <span class="k">else</span>:
+                    self.items.insert<span class="o">(</span>0, self.items.pop<span class="o">())</span>
+
+        <span class="k">return </span>self.items.pop<span class="o">()</span> + 1
+
+ysf <span class="o">=</span> Ysf<span class="o">(</span>34, 20<span class="o">)</span>
+print ysf.run<span class="o">()</span>
+</code></pre>
+</div>
+<p>虽然解决了问题，但是也可以看到，这个时间复杂度可是nm，如果是数值稍微带点的mn的话，那就变得相当糟糕了</p>
+
+<h3 id="section-2">数学方法</h3>
+<p>两个变量决定一个输出，这个过程很符合函数的思想，所以马上就会觉得，是不是有什么通用的公式可以直接用，不需要自己去模拟这个过程就可以快捷的获取最终的答案，毕竟采用模拟的方法也可以看到，时间复杂度是O(nm)，如果是人数很多的或者m值很大的话将会很呛人，所以现在来寻找一下通用的方法吧。</p>
+
+<p>每次循环m次，然后去掉一个单元的结果是同上一次循环m次去除单元这个动作是相关的是吧，如果是这种情况，可以想到的应该马上就是递归了，</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>F<span class="o">(</span>n<span class="o">)</span> <span class="o">=</span> F<span class="o">(</span>n-1<span class="o">)</span> + m
 </code></pre>
 </div>
 
-<p>但是我们可以发现一个很蛋疼的问题，就是，卧槽，某一天我发现人进化了，不需要喝水了，而是喝汽油了，那么怎么办，因为现在这块代码中水资源和人是耦合在一起的，哭死，到处改，蛋疼，且不方便测试。OOP的编程可是一直都是强调高内聚低耦合的惹，不能让这件事情发生 …</p>
+<p>同时又有</p>
 
-<h4 id="section">什么叫做依赖（什么叫做依赖注入）？</h4>
-<p>我需要一种东西，但是我没有这种东西，这个东西就是我的依赖。</p>
-
-<p>举个例子：人的生存需要水资源，但是水资源我们自己本身没有多余的，所以需要从外界来获取，所以水资源就是人的 <strong>依赖</strong>。</p>
-
-<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class People
-<span class="o">{</span>
-    private <span class="nv">$_water</span>;
-
-    public <span class="k">function </span>drink<span class="o">(</span>Water <span class="nv">$water</span><span class="o">)</span>
-    <span class="o">{</span>
-        <span class="nv">$this</span>-&gt;_water <span class="o">=</span> <span class="nv">$water</span>;
-    <span class="o">}</span>
-<span class="o">}</span>
-</code></pre>
-</div>
-<p>代码很容易理解，但是也不容易理解+_+。</p>
-
-<p>在这块代码中我们可以看到有一个Water的对象被赋值给People的一个变量中，但是发现这个Water对象是从外界注入到类中的，而不是硬编码到People类中，这样子的做饭的好处有两个：</p>
-
-<ul>
-  <li>这样子相当于把代码从硬编码从解放出来了，这个可以在业务中考虑，因为人是喝水的，但是喝的水可以是不同的品种的（可以是百岁山啊，怡宝啊等），所以如果是硬编码到代码中的话如果是需求一变，那么就需要重新修改代码了，如果是这个依赖是注入的话那么就实现了代码的解耦了</li>
-  <li>还有一个好处就是方便进行测试，因为这个Water的对象是外界注入的，在测试的时候就编程可控的了</li>
-</ul>
-
-<h4 id="section-1">什么叫做依赖查找？</h4>
-<blockquote>
-  <p>依赖查找更加主动，在需要的时候通过调用框架提供的方法来获取对象，获取时需要提供相关的配置文件路径、key等信息来确定获取对象的状态。</p>
-</blockquote>
-
-<h4 id="section-2">依赖查找和依赖注入的区别</h4>
-<p>依赖注入是一种被动的行为，而依赖查找是一种主动的行为。就像是我需要一种东西，然后别人就给我一种东西，而依赖查找更像是，我需要一种东西，然后我自己通过配置去查找一种东西。</p>
-
-<h4 id="ioc">Ioc出场</h4>
-
-<p>通过之前的代码，我们终于可以把依赖从宿主类中的硬编码解耦出来了，但是还是存在一个问题，那就是每次我去实例化一个类的时候还是需要自己去手动的实例化一个我想要注入的类，然后注入到宿主类中，(⊙o⊙)… 虽然解耦出来，但是用得还是很不方便啊，程序员就是为了解决问题，好吧，通过查找了一下万能的wiki相关的控制反转的概念：</p>
-
-<blockquote>
-  <p>控制反转（Inversion of Control，缩写为IoC），是面向对象编程中的一种设计原则，可以用来减低计算机代码之间的耦合度。其中最常见的方式叫做依赖注入（Dependency Injection，简称DI），还有一种方式叫“依赖查找”（Dependency Lookup）。通过控制反转，对象在被创建的时候，由一个调控系统内所有对象的外界实体，将其所依赖的对象的引用传递给它。也可以说，依赖被注入到对象中。 – 维基百科</p>
-</blockquote>
-
-<p>好吧，现在需要一个系统，能够帮助我们自动的注入相关的依赖还有能够进行依赖查找，现在来查看下laravel的做法</p>
-
-<div class="language-bash highlighter-rouge"><pre class="highlight"><code>namespace App<span class="se">\J</span>obs;
-
-use App<span class="se">\U</span>ser;
-use Illuminate<span class="se">\C</span>ontracts<span class="se">\M</span>ail<span class="se">\M</span>ailer;
-use Illuminate<span class="se">\C</span>ontracts<span class="se">\B</span>us<span class="se">\S</span>elfHandling;
-
-class PurchasePodcast implements SelfHandling
-<span class="o">{</span>
-    /<span class="k">**</span>
-     <span class="k">*</span> The mailer implementation.
-     <span class="k">*</span>/
-    protected <span class="nv">$mailer</span>;
-
-    /<span class="k">**</span>
-     <span class="k">*</span> Create a new instance.
-     <span class="k">*</span>
-     <span class="k">*</span> @param  Mailer  <span class="nv">$mailer</span>
-     <span class="k">*</span> @return void
-     <span class="k">*</span>/
-    public <span class="k">function </span>__construct<span class="o">(</span>Mailer <span class="nv">$mailer</span><span class="o">)</span>
-    <span class="o">{</span>
-    <span class="nv">$this</span>-&gt;mailer <span class="o">=</span> <span class="nv">$mailer</span>;
-    <span class="o">}</span>
-
-    /<span class="k">**</span>
-     <span class="k">*</span> Purchase a podcast.
-     <span class="k">*</span>
-     <span class="k">*</span> @return void
-     <span class="k">*</span>/
-    public <span class="k">function </span>handle<span class="o">()</span>
-    <span class="o">{</span>
-        //
-    <span class="o">}</span>
-<span class="o">}</span>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>F<span class="o">(</span>n-1<span class="o">)</span> <span class="o">=</span> F<span class="o">(</span>n-2<span class="o">)</span> + m
 </code></pre>
 </div>
 
-<p>借用下laravel文档中的一段代码，现在这个类中在构造函数中是注入了Mailer对象依赖，但是现在我们不需要自己来注入，因为laravel已经帮我们做好了，如果是按照下面的代码走一遍，你会发现程序能够正常的运行</p>
+<p>因为在加上m的时候可能大于总数（现在是i），所以修改成这样子</p>
 
-<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="nv">$reflector</span> <span class="o">=</span> new ReflectionClass<span class="o">(</span><span class="s1">'App\Jobs\PurchasePodcast'</span><span class="o">)</span>;
-
-<span class="k">if</span> <span class="o">(</span><span class="nv">$reflector</span>-&gt;isInstantiable<span class="o">())</span> <span class="o">{</span>
-    <span class="nv">$user</span> <span class="o">=</span> <span class="nv">$refector</span>-&gt;newInstance<span class="o">()</span>; //in other <span class="k">case</span> you can send any arguments
-<span class="o">}</span>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>F<span class="o">(</span>n<span class="o">)</span> <span class="o">=</span> <span class="o">(</span>F<span class="o">(</span>n-1<span class="o">)</span> + m<span class="o">)</span> % i
 </code></pre>
 </div>
 
-<p>因为在实例化类的时候，laravel通过反射获取了构造函数的相关的参数，然后通过命名空间来获取需要的相关的类或者接口，然后通过调度系统中相关的映射关系来得到正确的解析之后注入到类中，简直不能再棒了…</p>
+<p>按照上边的方法，如果是按照递归的算法也可以写出来，但是我现在是采用了循环的写法来写</p>
 
-<p>现在我们已经大概理解了Ioc，接下来的一些博文将会说一下如何自己实现Ioc，反正很简单…</p>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class YueSF:
+    <span class="s1">'''
+    非递归的方式
+    '''</span>
+    def __init__<span class="o">(</span>self, step_size, amount<span class="o">)</span>:
+        self.step_size <span class="o">=</span> step_size
+        self.amount <span class="o">=</span> amount
 
+        self.items <span class="o">=</span> <span class="o">[]</span>
+        <span class="k">for </span>each <span class="k">in </span>range<span class="o">(</span>0, amount<span class="o">)</span>:
+            self.items.insert<span class="o">(</span>0, each<span class="o">)</span>
+
+        self.items.reverse<span class="o">()</span>
+
+    def run<span class="o">(</span>self<span class="o">)</span>:
+        result <span class="o">=</span> 0
+        <span class="k">for </span>each <span class="k">in </span>range<span class="o">(</span>2, self.amount + 2<span class="o">)</span>:
+            result <span class="o">=</span> <span class="o">(</span>result + self.step_size<span class="o">)</span> % each
+
+        <span class="k">return </span>result
+
+ysf <span class="o">=</span> YueSF<span class="o">(</span>34, 20<span class="o">)</span>
+print ysf.run<span class="o">()</span>
+</code></pre>
+</div>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>class YueSF:
+    <span class="s1">'''
+    递归的方式
+    '''</span>
+    def __init__<span class="o">(</span>self, step_size, amount<span class="o">)</span>:
+        self.step_size <span class="o">=</span> step_size
+        self.amount <span class="o">=</span> amount
+
+        self.items <span class="o">=</span> <span class="o">[]</span>
+        <span class="k">for </span>each <span class="k">in </span>range<span class="o">(</span>0, amount<span class="o">)</span>:
+            self.items.insert<span class="o">(</span>0, each<span class="o">)</span>
+
+        self.items.reverse<span class="o">()</span>
+
+    def run<span class="o">(</span>self, step_size, amount<span class="o">)</span>:
+        <span class="k">if </span>amount <span class="o">==</span> 1:
+            <span class="k">return </span>0
+        <span class="k">else</span>:
+            <span class="k">return</span> <span class="o">(</span>self.run<span class="o">(</span>step_size, amount - 1<span class="o">)</span> + step_size<span class="o">)</span> % amount
+        
+ysf <span class="o">=</span> YueSF<span class="o">(</span>2, 5<span class="o">)</span>
+print ysf.run<span class="o">(</span>2, 5<span class="o">)</span> + 1
+</code></pre>
+</div>
+
+<p>从上面的代码可以看到，现在的时间复杂度已经变成了O(n)了，和O(nm)相比好了一些</p>
+
+<p>… 图片啥的待续</p>
 
 
                 <hr>
@@ -293,16 +298,18 @@ class PurchasePodcast implements SelfHandling
                 </style>
                 <div class="ds-share"
                     style="text-align: right"
-                    data-thread-key="/2016/07/10/原来你是这样的Ioc"
-                    data-title="原来你是这样的Ioc"
-                    data-url="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/"
+                    data-thread-key="/2016/07/22/约瑟夫环"
+                    data-title="约瑟夫环"
+                    data-url="http://brittyu.xyz/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/"
                     data-images="http://brittyu.xyz/img/home-bg.jpg"
                     data-content="
 
-世间万物的出现必然有原因：
+约瑟夫环
+
+前言： 貌似高中老师讲过，但是数学课被我睡过去了，罪孽深重啊，现在补过来
 
 
-  早在2004年，Martin Fowler就提出了“哪些方面的控制被反转了？”这个问题。他总结出是依赖对象的获得被... | 小圣的博客 | Yu's Blog " >
+  已知n个人（以编号1，2，3…n分别表示）围坐在一张圆桌... | 小圣的博客 | Yu's Blog " >
                     <div class="ds-share-inline">
                       <ul  class="ds-share-icons-16">
                         <li data-toggle="ds-share-icons-more"><a class="ds-more" href="#">分享到：</a></li>
@@ -322,13 +329,9 @@ class PurchasePodcast implements SelfHandling
                 <ul class="pager">
                     
                     <li class="previous">
-                        <a href="/2016/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%94%81%E6%9C%BA%E5%88%B6/" data-toggle="tooltip" data-placement="top" title="数据库的锁机制">&larr; Previous Post</a>
+                        <a href="/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/" data-toggle="tooltip" data-placement="top" title="原来你是这样的Ioc">&larr; Previous Post</a>
                     </li>
                     
-                    
-                    <li class="next">
-                        <a href="/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/" data-toggle="tooltip" data-placement="top" title="约瑟夫环">Next Post &rarr;</a>
-                    </li>
                     
                 </ul>
 
@@ -337,9 +340,9 @@ class PurchasePodcast implements SelfHandling
                 <!-- 多说评论框 start -->
                 <div class="comment">
                     <div class="ds-thread"
-                        data-thread-key="/2016/07/10/原来你是这样的Ioc"
-                        data-title="原来你是这样的Ioc"
-                        data-url="http://brittyu.xyz/2016/07/10/%E5%8E%9F%E6%9D%A5%E4%BD%A0%E6%98%AF%E8%BF%99%E6%A0%B7%E7%9A%84Ioc/" >
+                        data-thread-key="/2016/07/22/约瑟夫环"
+                        data-title="约瑟夫环"
+                        data-url="http://brittyu.xyz/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/" >
                     </div>
                 </div>
                 <!-- 多说评论框 end -->

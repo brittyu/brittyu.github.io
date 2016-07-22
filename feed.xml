@@ -5,9 +5,144 @@
     <description></description>
     <link>http://brittyu.xyz/</link>
     <atom:link href="http://brittyu.xyz/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Mon, 11 Jul 2016 00:06:33 +0800</pubDate>
-    <lastBuildDate>Mon, 11 Jul 2016 00:06:33 +0800</lastBuildDate>
+    <pubDate>Sat, 23 Jul 2016 01:44:46 +0800</pubDate>
+    <lastBuildDate>Sat, 23 Jul 2016 01:44:46 +0800</lastBuildDate>
     <generator>Jekyll v3.1.6</generator>
+    
+      <item>
+        <title>约瑟夫环</title>
+        <description>&lt;hr /&gt;
+
+&lt;h3 id=&quot;section&quot;&gt;约瑟夫环&lt;/h3&gt;
+
+&lt;p&gt;前言： 貌似高中老师讲过，但是数学课被我睡过去了，罪孽深重啊，现在补过来&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;已知n个人（以编号1，2，3…n分别表示）围坐在一张圆桌周围。从编号为k的人开始报数，数到m的那个人出列；他的下一个人又从1开始报数，数到m的那个人又出列；依此规律重复下去，直到圆桌周围的人全部出列。通常解决这类问题时我们把编号从0~n-1，最后[1]  结果+1即为原问题的解&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;这个是约瑟夫环的问题的大概题目&lt;/p&gt;
+
+&lt;p&gt;看到这个题目，我的脑海中闪过的是最直接的方式，就是仿照这个游戏过程来做&lt;/p&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;模拟法&lt;/h4&gt;
+
+&lt;p&gt;如果是按照这个游戏规则来模拟，那么，我可以建立一个首尾相连的链表，然后不断地循环这个链表，每次数到m的时候，被选中的单元就从链表中去掉，然后接着从下一个开始重新数到m的时候把该项去掉，不断的循环下去，直到最后剩下的唯一的一个单元，因为现在这边是从0~n-1，所以最后的结果是需要加1的，按照这种方法，编写出以下的代码，最近比较少写python，有点生疏了，不要介意，有什么问题可以和我讨论下 :P&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class Ysf:
+
+    def __init__&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self, step_size, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        self.step_size &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; step_size
+        self.amount &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; amount
+
+        self.items &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;each &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;range&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+            self.items.insert&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, each&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+        self.items.reverse&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+
+    def run&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        &lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;len&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self.items&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &amp;gt; 1:
+            &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;each &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;range&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, self.step_size&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+                &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;each + 1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; self.step_size:
+                    self.items.pop&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;:
+                    self.items.insert&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, self.items.pop&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;return &lt;/span&gt;self.items.pop&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; + 1
+
+ysf &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Ysf&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;34, 20&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+print ysf.run&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;虽然解决了问题，但是也可以看到，这个时间复杂度可是nm，如果是数值稍微带点的mn的话，那就变得相当糟糕了&lt;/p&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;数学方法&lt;/h3&gt;
+&lt;p&gt;两个变量决定一个输出，这个过程很符合函数的思想，所以马上就会觉得，是不是有什么通用的公式可以直接用，不需要自己去模拟这个过程就可以快捷的获取最终的答案，毕竟采用模拟的方法也可以看到，时间复杂度是O(nm)，如果是人数很多的或者m值很大的话将会很呛人，所以现在来寻找一下通用的方法吧。&lt;/p&gt;
+
+&lt;p&gt;每次循环m次，然后去掉一个单元的结果是同上一次循环m次去除单元这个动作是相关的是吧，如果是这种情况，可以想到的应该马上就是递归了，&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n-1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; + m
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;同时又有&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n-1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n-2&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; + m
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;因为在加上m的时候可能大于总数（现在是i），所以修改成这样子&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;F&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;n-1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; + m&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; % i
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;按照上边的方法，如果是按照递归的算法也可以写出来，但是我现在是采用了循环的写法来写&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class YueSF:
+    &lt;span class=&quot;s1&quot;&gt;&#39;&#39;&#39;
+    非递归的方式
+    &#39;&#39;&#39;&lt;/span&gt;
+    def __init__&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self, step_size, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        self.step_size &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; step_size
+        self.amount &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; amount
+
+        self.items &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;each &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;range&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+            self.items.insert&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, each&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+        self.items.reverse&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+
+    def run&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        result &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+        &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;each &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;range&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2, self.amount + 2&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+            result &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;result + self.step_size&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; % each
+
+        &lt;span class=&quot;k&quot;&gt;return &lt;/span&gt;result
+
+ysf &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; YueSF&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;34, 20&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+print ysf.run&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;class YueSF:
+    &lt;span class=&quot;s1&quot;&gt;&#39;&#39;&#39;
+    递归的方式
+    &#39;&#39;&#39;&lt;/span&gt;
+    def __init__&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self, step_size, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        self.step_size &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; step_size
+        self.amount &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; amount
+
+        self.items &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;each &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;range&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+            self.items.insert&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0, each&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+        self.items.reverse&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+
+    def run&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self, step_size, amount&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;:
+        &lt;span class=&quot;k&quot;&gt;if &lt;/span&gt;amount &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; 1:
+            &lt;span class=&quot;k&quot;&gt;return &lt;/span&gt;0
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;:
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;self.run&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;step_size, amount - 1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; + step_size&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; % amount
+        
+ysf &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; YueSF&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2, 5&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+print ysf.run&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2, 5&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; + 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;从上面的代码可以看到，现在的时间复杂度已经变成了O(n)了，和O(nm)相比好了一些&lt;/p&gt;
+
+&lt;p&gt;… 图片啥的待续&lt;/p&gt;
+</description>
+        <pubDate>Fri, 22 Jul 2016 22:47:59 +0800</pubDate>
+        <link>http://brittyu.xyz/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/</link>
+        <guid isPermaLink="true">http://brittyu.xyz/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/</guid>
+        
+        <category>算法</category>
+        
+        
+      </item>
     
       <item>
         <title>原来你是这样的Ioc</title>
