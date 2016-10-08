@@ -10,9 +10,9 @@
     <meta name="keyword"  content="">
     <link rel="shortcut icon" href="/img/favicon.ico">
 
-    <title>vim的正则匹配 - 小圣的博客 | Yu's Blog</title>
+    <title>gensim学习 - 小圣的博客 | Yu's Blog</title>
 
-    <link rel="canonical" href="http://brittyu.xyz/2016/04/17/vim%E7%9A%84%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/">
+    <link rel="canonical" href="http://brittyu.xyz/2016/10/08/gensim%E5%AD%A6%E4%B9%A0/">
 
     <!-- Bootstrap Core CSS -->
     <link rel="stylesheet" href="/css/bootstrap.min.css">
@@ -140,15 +140,17 @@
                 <div class="post-heading">
                     <div class="tags">
                         
-                        <a class="tag" href="/tags/#vim" title="vim">vim</a>
+                        <a class="tag" href="/tags/#python" title="python">python</a>
+                        
+                        <a class="tag" href="/tags/#学习记录" title="学习记录">学习记录</a>
                         
                     </div>
-                    <h1>vim的正则匹配</h1>
+                    <h1>gensim学习</h1>
                     
                     
                     <h2 class="subheading"></h2>
                     
-                    <span class="meta">Posted by Yu's Blog on April 17, 2016</span>
+                    <span class="meta">Posted by Yu's Blog on October 8, 2016</span>
                 </div>
             </div>
         </div>
@@ -168,106 +170,90 @@
 
 				<hr />
 
-<h4 id="vim">关于vim正则替换的一些使用</h4>
+<h4 id="gensim-">gensim 学习记录</h4>
 
-<p>一起从早上碰见的一个小插曲开始，问题大概是这样子的，直接上代码</p>
+<h5 id="section">起因</h5>
+<p>最近做了一个文本相似度检查的东西</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&lt;?php
-return [
-	0 =&gt; '自主’，
-	1 =&gt; '手动',
-	2 =&gt; '半自动',
-	... // more than ten line
-];
-</code></pre>
-</div>
-<p>这个数组我是写在配置文件中的，现在是因为处理数据的方式改变了，我需要把数组中的键值调换过来。</p>
-
-<p>嘻嘻，作为一个vim党，脑海中飘过的是通过全局匹配替换的方法来做这个事情，指令也很简单:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>:%s#\(\d*\) =&gt; \('.*'\)#\2 =&gt; \1#
-</code></pre>
-</div>
-
-<p>写完了之后发现自己虽然平时会经常用到vim的正则，但是貌似没有去总结过一些这些东西，乘着心血来潮，总结一下常用到的一些正则匹配的规则。</p>
-
-<p>vim 匹配的规则是</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>:[range]s/from/to/[flags]
-</code></pre>
-</div>
-
-<h5 id="flag">flag</h5>
-<ul>
-  <li>c : 在替换之前询问</li>
-  <li>e : 不显示错误</li>
-  <li>g : 不询问，整个文件替换</li>
-  <li>i : 不区分大小写</li>
-</ul>
-
-<h5 id="section">元字符</h5>
-<p>###### 文本数字匹配
-*  . : 匹配任意字符
-*  [abc] : 匹配方括号中的任意一个字符，可用-表示字符范围。如[a-z0-9]匹配小写字母和数字（例子中表示匹配abc中的其中一个就行
-*  [^abc] : 匹配除方括号中字符之外的任意字符（例子中表示不匹配abc中的任何一个
-*  	\d : 匹配阿拉伯数字，等同于[0-9]
-*   \D : 匹配阿拉伯数字之外的任意字符，等同于[^0-9]
-*   \x : 匹配十六进制数字，等同于[0-9A-Fa-f]
-*   \X : 匹配十六进制数字之外的任意字符，等同于[^0-9A-Fa-f]</p>
-
-<h6 id="section-1">多个匹配</h6>
+<h5 id="section-1">联想</h5>
+<p>文本相似度检查可以利用在很多的地方，例如是：</p>
 
 <ul>
-  <li>\l : 匹配[a-z]</li>
-  <li>\L : 匹配[^a-z]</li>
-  <li>\u : 匹配[A-Z]</li>
-  <li>\U : 匹配[^A-Z]</li>
-  <li>\w : 匹配单词字母，等同于[0-9A-Za-z_]</li>
-  <li>\W : 匹配单词字母之外的任意字符，等同于[^0-9A-Za-z_]</li>
+  <li>相关文章或者产品的推荐</li>
+  <li>相同文本的检查</li>
+  <li>更加“高级”的去重工作</li>
 </ul>
 
-<h6 id="section-2">特殊符号匹配</h6>
+<p>现在python已经提供了一个好用的模块，叫做<a href="radimrehurek.com/gensim/tutorial.html">gensim</a>，
+因为gensim的文档里边已经介绍得很详细了，所以我现在就不重复说这些东西了，接下来我是直接记录我在使用过程中的一些问题，
+为了配合gensim的使用，还会使用到一个强大的中文分词工具，叫做<a href="https://github.com/fxsjy/jieba">jieba</a></p>
 
-<ul>
-  <li>\t : 匹配<TAB>字符</TAB></li>
-  <li>\s : 匹配空白字符，等同于[\t]</li>
-  <li>\S : 匹配非空白字符，等同于[^\t]</li>
-  <li>\* : 匹配* 字符</li>
-  <li>\. : 匹配. 字符</li>
-  <li>\/ : 匹配 / 字符</li>
-  <li>\\ : 匹配 \ 字符</li>
-  <li>\[ : 匹配 [ 字符</li>
-  <li>\] : 匹配 ] 字符</li>
-</ul>
+<p>我在我的linux主机下装好了全部的依赖之后，现在就差数据了，这个比较简单，可以写一个简单的爬虫爬取相关的网站的数据，
+因为我测试的时候是用到了汽车的资讯，所以写了一个小爬虫去爬取了汽车之家的汽车资讯文章，爬了两千多条之后差不多就够了，</p>
 
-<h6 id="section-3">范围匹配</h6>
+<p>数据爬下来之后可以开始使用jieba中文分词工具来对内容进行分词</p>
 
-<ul>
-  <li>
-    <ul>
-      <li>:匹配0-任意个</li>
-    </ul>
-  </li>
-  <li>+ : 匹配1-任意个</li>
-  <li>\? : 匹配0-1个</li>
-  <li>{n,m} : 匹配n-m个</li>
-  <li>{n} : 匹配n个</li>
-  <li>{n,} : 匹配n到任一多个</li>
-  <li>{,m} : 匹配0到m个</li>
-</ul>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># encoding=utf-8</span>
+import jieba
+from gensim import corpora,models,similarities,
 
-<h5 id="section-4">变量替换</h5>
-<p>在vim中还存在一个东西就是变量替换，既是如果是用(和)包含起来的匹配字段，可以用1,2来访问，从我之前的例子来说明</p>
+<span class="nv">train_set</span><span class="o">=[]</span>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>:%s#\(\d*\) =&gt; \('.*'\)#\2 =&gt; \1#
+all_text_file <span class="o">=</span> open<span class="o">(</span><span class="s1">'./data/all.txt'</span><span class="o">)</span>
+
+<span class="k">for </span>line <span class="k">in </span>all_text_file:
+    word_list <span class="o">=</span> jieba.cut<span class="o">(</span>line, <span class="nv">cut_all</span><span class="o">=</span>False<span class="o">)</span>
+    train_set.append<span class="o">(</span>word_list<span class="o">)</span>
+
+all_text_file.close<span class="o">()</span>
 </code></pre>
 </div>
 
-<p>(\d<em>) 匹配的是前面的数字，接下来我可以通过\1变量来使用我匹配到的文本
-(’.</em>’) 匹配的是小括号中的文本，接下来我们可以通过\2变量来使用我们之前匹配到的文本</p>
+<p>我这边只是做一个简单地实例代码，在实际情况中根据自身的需求进行改动。
+最后得到的train_set 算是语料了（可以设置一些去停词来过滤掉一些无关的词语）
+现在可以通过语料来生成自己的词语字典了（就和新华字典的概念差不多，一个词语给一个编号，可以通过这个编号来标记这个词语）</p>
 
-<p>vim中包含着很多与编程相关的东西，接下来计划把vim里内彻底撸一遍来，更加深入的理解这个神器。</p>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c">#生成字典</span>
+dictionary <span class="o">=</span> corpora.Dictionary<span class="o">(</span>train_set<span class="o">)</span>
 
+<span class="c"># 保存到文件中，以提供以后使用</span>
+dictionary.save<span class="o">(</span><span class="s2">"dictionary.dic"</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>现在有了字典之后，可以把内容都转换成编号来表示了</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>corpus <span class="o">=</span> <span class="o">[</span>dictionary.doc2bow<span class="o">(</span>text<span class="o">)</span> <span class="k">for </span>text <span class="k">in </span>train_set]
+</code></pre>
+</div>
+
+<p>现在可以将数字语料转换成TFIDF了（关于什么是TFIDF网上搜一下）</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>#使用数字语料生成TFIDF模型
+tfidfModel = models.TfidfModel(corpus)
+
+#把全部语料向量化成TFIDF模式，这个tfidfModel可以传入二维数组
+tfidfVectors = tfidfModel[corpus]
+
+indexTfidf = similarities.MatrixSimilarity(tfidfVectors)
+</code></pre>
+</div>
+
+<p>现在已经做好了基本工作了，来测试一下结果</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>doc_bow = dictionary.doc2bow(query)
+doc_tfidf = tfidf[doc_bow]
+
+sims = indexTfidf[doc_tfidf]
+pprint(list(sims))
+</code></pre>
+</div>
+
+<p>最后打印出来就是当前查询的文本和历史的文本的相似度的情况，如果是完全相似的话是1.0，如果是完全无关的0.0</p>
+
+<h5 id="section-2">写在最后</h5>
+
+<p>多总结多总结…</p>
 
 
                 <hr>
@@ -277,19 +263,22 @@ return [
                 </style>
                 <div class="ds-share"
                     style="text-align: right"
-                    data-thread-key="/2016/04/17/vim的正则表达式"
-                    data-title="vim的正则匹配"
-                    data-url="http://brittyu.xyz/2016/04/17/vim%E7%9A%84%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/"
+                    data-thread-key="/2016/10/08/gensim学习"
+                    data-title="gensim学习"
+                    data-url="http://brittyu.xyz/2016/10/08/gensim%E5%AD%A6%E4%B9%A0/"
                     data-images="http://brittyu.xyz/img/home-bg.jpg"
                     data-content="
 
-关于vim正则替换的一些使用
+gensim 学习记录
 
-一起从早上碰见的一个小插曲开始，问题大概是这样子的，直接上代码
+起因
+最近做了一个文本相似度检查的东西
 
-&lt;?php
-return [
-	0 =&gt;... | 小圣的博客 | Yu's Blog " >
+联想
+文本相似度检查可以利用在很多的地方，例如是：
+
+
+  相关文章或者产品的推荐... | 小圣的博客 | Yu's Blog " >
                     <div class="ds-share-inline">
                       <ul  class="ds-share-icons-16">
                         <li data-toggle="ds-share-icons-more"><a class="ds-more" href="#">分享到：</a></li>
@@ -308,10 +297,10 @@ return [
 
                 <ul class="pager">
                     
-                    
-                    <li class="next">
-                        <a href="/2016/04/26/autoconf%E4%BD%BF%E7%94%A8/" data-toggle="tooltip" data-placement="top" title="autoconf使用">Next Post &rarr;</a>
+                    <li class="previous">
+                        <a href="/2016/07/22/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF/" data-toggle="tooltip" data-placement="top" title="约瑟夫环">&larr; Previous Post</a>
                     </li>
+                    
                     
                 </ul>
 
@@ -320,9 +309,9 @@ return [
                 <!-- 多说评论框 start -->
                 <div class="comment">
                     <div class="ds-thread"
-                        data-thread-key="/2016/04/17/vim的正则表达式"
-                        data-title="vim的正则匹配"
-                        data-url="http://brittyu.xyz/2016/04/17/vim%E7%9A%84%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F/" >
+                        data-thread-key="/2016/10/08/gensim学习"
+                        data-title="gensim学习"
+                        data-url="http://brittyu.xyz/2016/10/08/gensim%E5%AD%A6%E4%B9%A0/" >
                     </div>
                 </div>
                 <!-- 多说评论框 end -->
